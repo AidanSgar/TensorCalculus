@@ -1,28 +1,21 @@
-import numpy as np
 import string
+import numpy as np
+import itertools
 
 
-def subTensorHeader(input, pos):
-    letters = list(string.ascii_lowercase)
-    for i in pos:
-        input.replace(letters[i], str(i))
-    return input
+def acsessSubArray(c, dim, rank, pos):
+    a = dim ** (rank)
+    reformatC = np.array(c).reshape((1, a))[0]
+    index = 0
+    for i in range(len(pos)):
+        index += pos[i] * (dim ** (i + 2))
+    outputC = reformatC[index:index + (dim ** 2)]
+    return outputC.reshape((dim, dim))
 
-
-def permutationsRepeatitionsRecur(n, left, k):
-    # Pushing this vector to a vector of vector
-    if (k == 0):
-        permutationsOutput.append(tempPermutationsOutput[:])
-        return
-    for i in range(left, n + 1):
-        tempPermutationsOutput.append(i)
-        permutationsRepeatitionsRecur(n, i + 1, k - 1)
-        tempPermutationsOutput.pop()
-
-
-def permutationsRepeatitions(dim,rank):
-    permutationsRepeatitionsRecur(dim,1, rank)
-    return permutationsOutput
+def permutationsRepeatitions(n, k):
+    x = [i for i in range(n)]
+    output = [p for p in itertools.product(x, repeat=k)]
+    return output
 
 
 def formatted2Darray(dim, coeficents, tensorString):
@@ -78,7 +71,7 @@ class tensor:
             raise ValueError(
                 "Coeficents array does not alighn with tensor type and dimension -- type: " + str(
                     type) + " dimension: " + str(dim) + " so the array needs to have dimensions:" + str(
-                    b) + "and currently is " + str(a.shape))
+                    b) + "and currently is " + str(np.array(coeficents).shape))
         self.coeficents = coeficents
 
     # Name of tensor can be used for debuging and printing, is optional and if not inputed then will be set too "T": string
@@ -91,10 +84,6 @@ class tensor:
     name = property(getName, setName)
 
     def showTensor(self):
-        global permutationsOutput
-        global tempPermutationsOutput
-        permutationsOutput = []
-        tempPermutationsOutput = []
         tensorString = ""
 
         # Adding Tensor name including indicies to the start of the print out
@@ -127,21 +116,22 @@ class tensor:
             tensorString = formatted2Darray(self.dim, self.coeficents, tensorString)
 
         if self.type[0] + self.type[1] > 2:
-            #Broken indiceis of sub array print outs dont repeat look too permutationsRepitition()
             nonPresentableRank = self.type[0] + self.type[1] - 2
-            permutationsRepeatitions(self.dim,nonPresentableRank)
+            permutationsOutput = permutationsRepeatitions(self.dim, nonPresentableRank)
             letters = list(string.ascii_lowercase)
-            copyTensorString = [tensorString]*len(permutationsOutput)
+            copyTensorString = [tensorString] * len(permutationsOutput)
             for i in range(len(permutationsOutput)):
                 for j in range(len(permutationsOutput[i])):
-                    copyTensorString[i] = copyTensorString[i].replace(letters[j],str(permutationsOutput[i][j]))
-                    copyTensorString[i] += "hello \n\n"
-                tensorString += copyTensorString[i]
+                    copyTensorString[i] = copyTensorString[i].replace(letters[j], str(permutationsOutput[i][j]))
+                copyTensorString[i] = formatted2Darray(self.dim, acsessSubArray(self.coeficents, self.dim,
+                                                                                    self.type[0] + self.type[1],
+                                                                                    permutationsOutput[i]), copyTensorString[i])
+                tensorString += copyTensorString[i]+"\n"
 
         print(tensorString)
 
 
 if __name__ == '__main__':
-    a = np.zeros((3,3,3,3))
-    test = tensor(3, (1, 1,1), (1, 3), a)
+    a = np.random.randint(1000,size=(4,4,4,4))
+    test = tensor(4, (1, 1,1,1), (2, 2), a)
     test.showTensor()
