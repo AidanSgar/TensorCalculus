@@ -2,10 +2,53 @@ import numpy as np
 import string
 
 
-def printIndicies(a, n, m, state):
-    # if state is equal too True then we do contravariant and if False we do covariant
+def subTensorHeader(input, pos):
     letters = list(string.ascii_lowercase)
-    if state:
+    for i in pos:
+        input.replace(letters[i], str(i))
+    return input
+
+
+def permutationsRepeatitionsRecur(n, left, k):
+    # Pushing this vector to a vector of vector
+    if (k == 0):
+        permutationsOutput.append(tempPermutationsOutput[:])
+        return
+    for i in range(left, n + 1):
+        tempPermutationsOutput.append(i)
+        permutationsRepeatitionsRecur(n, i + 1, k - 1)
+        tempPermutationsOutput.pop()
+
+
+def permutationsRepeatitions(dim,rank):
+    permutationsRepeatitionsRecur(dim,1, rank)
+    return permutationsOutput
+
+
+def formatted2Darray(dim, coeficents, tensorString):
+    posSave = [[False] * dim for _ in range(dim)]
+    length = [" "] * dim
+    for i in range(dim):
+        for j in range(dim):
+            if len(str(coeficents[i][j])) > 1:
+                length[j] = " " * (len(str(coeficents[i][j])))
+                posSave[i][j] = True
+
+    for i in range(dim):
+        for j in range(dim):
+            if posSave[i][j]:
+                tensorString += str(coeficents[i][j]) + " "
+            else:
+                tensorString += str(coeficents[i][j]) + length[j]
+        tensorString += "\n"
+    return tensorString
+
+
+def printIndicies(a, n, m, state1):
+    # if state1 is equal too True then we do contravariant and if False we do covariant
+    # if state2 is equal to False for header tensor name and True for header tensor name of sub rank 2 tensors
+    letters = list(string.ascii_lowercase)
+    if state1:
         a += "^("
     else:
         a += "_("
@@ -30,9 +73,8 @@ class tensor:
         # tuple type[0] = tangent or number of contravariant indecies and type[1] = cotangent or number of covariant indecies (int > 0,int > 0)
         self.type = type
 
-        a = np.array(coeficents)
         b = [dim] * (type[0] + type[1])
-        if a.shape != tuple(b):
+        if np.array(coeficents).shape != tuple(b):
             raise ValueError(
                 "Coeficents array does not alighn with tensor type and dimension -- type: " + str(
                     type) + " dimension: " + str(dim) + " so the array needs to have dimensions:" + str(
@@ -49,6 +91,10 @@ class tensor:
     name = property(getName, setName)
 
     def showTensor(self):
+        global permutationsOutput
+        global tempPermutationsOutput
+        permutationsOutput = []
+        tempPermutationsOutput = []
         tensorString = ""
 
         # Adding Tensor name including indicies to the start of the print out
@@ -78,29 +124,24 @@ class tensor:
                     tensorString += str(self.coeficents[i]) + "  "
 
         if self.type[0] + self.type[1] == 2:
-            tempPosSave = [[False]*self.dim]*self.dim
-            length = [" "] * self.dim
-            for i in range(self.dim):
-                for j in range(self.dim):
-                    if len(str(self.coeficents[i][j])) > len(length[i]):
-                        length[j] = " "*(len(str(self.coeficents[i][j])))
-                        print("test",i,j)
-                        tempPosSave[i][j] = True
+            tensorString = formatted2Darray(self.dim, self.coeficents, tensorString)
 
-            posSave = list(np.array(tempPosSave))
-            for i in range(self.dim):
-                for j in range(self.dim):
-                    if posSave[i][j] or j == self.dim-2:
-                        tensorString += str(self.coeficents[i][j]) + " "
-                    else:
-                        tensorString += str(self.coeficents[i][j]) + length[j]
-                tensorString += "\n"
-        print(length)
+        if self.type[0] + self.type[1] > 2:
+            #Broken indiceis of sub array print outs dont repeat look too permutationsRepitition()
+            nonPresentableRank = self.type[0] + self.type[1] - 2
+            permutationsRepeatitions(self.dim,nonPresentableRank)
+            letters = list(string.ascii_lowercase)
+            copyTensorString = [tensorString]*len(permutationsOutput)
+            for i in range(len(permutationsOutput)):
+                for j in range(len(permutationsOutput[i])):
+                    copyTensorString[i] = copyTensorString[i].replace(letters[j],str(permutationsOutput[i][j]))
+                    copyTensorString[i] += "hello \n\n"
+                tensorString += copyTensorString[i]
 
         print(tensorString)
 
 
 if __name__ == '__main__':
-    a = [[1000000000000, 1, 1,1], [1, 1, 10000,1], [1, 1, 1,1],[1,1,1,1]]
-    test = tensor(4, (1, 1, 1, 1), (1, 1), a)
+    a = np.zeros((3,3,3,3))
+    test = tensor(3, (1, 1,1), (1, 3), a)
     test.showTensor()
