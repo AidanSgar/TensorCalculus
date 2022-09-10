@@ -12,6 +12,7 @@ def acsessSubArray(c, dim, rank, pos):
     outputC = reformatC[index:index + (dim ** 2)]
     return outputC.reshape((dim, dim))
 
+
 def permutationsRepeatitions(n, k):
     x = [i for i in range(n)]
     output = [p for p in itertools.product(x, repeat=k)]
@@ -19,22 +20,16 @@ def permutationsRepeatitions(n, k):
 
 
 def formatted2Darray(dim, coeficents, tensorString):
-    posSave = [[False] * dim for _ in range(dim)]
-    length = [" "] * dim
+    maxLengthColumn = [0]*dim
     for i in range(dim):
         for j in range(dim):
-            if len(str(coeficents[i][j])) > 1:
-                length[j] = " " * (len(str(coeficents[i][j])))
-                posSave[i][j] = True
-
+            if len(str(coeficents[j][i])) >= maxLengthColumn[i]:
+                maxLengthColumn[i] = len(str(coeficents[j][i])) + 1
     for i in range(dim):
         for j in range(dim):
-            if posSave[i][j]:
-                tensorString += str(coeficents[i][j]) + " "
-            else:
-                tensorString += str(coeficents[i][j]) + length[j]
+            tensorString += str(coeficents[i][j]) + " "*(maxLengthColumn[i]-len(str(coeficents[i][j])))
         tensorString += "\n"
-    return tensorString
+    print(tensorString)
 
 
 def printIndicies(a, n, m, state1):
@@ -116,6 +111,7 @@ class tensor:
             tensorString = formatted2Darray(self.dim, self.coeficents, tensorString)
 
         if self.type[0] + self.type[1] > 2:
+            #by fixing the formatted2DArray subroutine we broke the showtensor attribute function idk why
             nonPresentableRank = self.type[0] + self.type[1] - 2
             permutationsOutput = permutationsRepeatitions(self.dim, nonPresentableRank)
             letters = list(string.ascii_lowercase)
@@ -123,15 +119,13 @@ class tensor:
             for i in range(len(permutationsOutput)):
                 for j in range(len(permutationsOutput[i])):
                     copyTensorString[i] = copyTensorString[i].replace(letters[j], str(permutationsOutput[i][j]))
-                copyTensorString[i] = formatted2Darray(self.dim, acsessSubArray(self.coeficents, self.dim,
-                                                                                    self.type[0] + self.type[1],
-                                                                                    permutationsOutput[i]), copyTensorString[i])
-                tensorString += copyTensorString[i]+"\n"
+                    copyTensorString[i] = formatted2Darray(self.dim, acsessSubArray(self.coeficents, self.dim,self.type[0] + self.type[1],permutationsOutput[i]),copyTensorString[i])
+                tensorString += copyTensorString[i] + "\n"
 
         print(tensorString)
 
 
 if __name__ == '__main__':
-    a = np.random.randint(1000,size=(4,4,4,4))
-    test = tensor(4, (1, 1,1,1), (2, 2), a)
+    a = np.random.randint(10000,size = (4,4))
+    test = tensor(4, (1, 1, 1, 1), (0, 2), a)
     test.showTensor()
